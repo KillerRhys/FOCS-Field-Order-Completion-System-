@@ -33,6 +33,7 @@ FOCS/
 ├── README.md
 ├── .gitignore
 └── data/
+```
 
 ## Setup
 - Install Python 3.11 or newer
