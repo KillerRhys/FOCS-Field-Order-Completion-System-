@@ -1,0 +1,104 @@
+/* General Theme Colors */
+:root {
+    --bg-dark: #0f172a;      /* Deep navy background */
+    --card-bg: #1e293b;      /* Slightly lighter card background */
+    --accent-blue: #38bdf8;  /* Bright blue from your screenshot */
+    --text-main: #f8fafc;
+    --text-muted: #94a3b8;
+    --danger-red: #ef4444;
+}
+
+body {
+    background-color: var(--bg-dark);
+    color: var(--text-main);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    padding: 40px 20px;
+}
+
+.container {
+    width: 100%;
+    max-width: 600px; /* Keeps the form from getting too wide */
+}
+
+/* Header Styling */
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid var(--accent-blue);
+    padding-bottom: 10px;
+    margin-bottom: 30px;
+}
+
+h1 {
+    font-size: 1.5rem;
+    margin: 0;
+}
+
+/* Form Container */
+.new-order form {
+    background-color: var(--card-bg);
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+/* Label & Input Styling */
+label {
+    font-size: 0.85rem;
+    color: var(--accent-blue);
+    font-weight: bold;
+    margin-bottom: -10px; /* Pulls label closer to its input */
+}
+
+input, textarea {
+    background-color: #0f172a;
+    border: 1px solid #334155;
+    color: white;
+    padding: 12px;
+    border-radius: 4px;
+    font-size: 1rem;
+    outline: none;
+}
+
+input:focus, textarea:focus {
+    border-color: var(--accent-blue);
+}
+
+textarea {
+    min-height: 100px;
+    resize: vertical;
+}
+
+/* Button Styling */
+.btn-primary {
+    background-color: var(--accent-blue);
+    color: #0f172a;
+    border: none;
+    padding: 12px;
+    border-radius: 4px;
+    font-weight: bold;
+    cursor: pointer;
+    text-align: center;
+    text-decoration: none;
+}
+
+.btn-primary:hover {
+    background-color: #7dd3fc;
+}
+
+.btn-logout-red {
+    background-color: var(--danger-red);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+}

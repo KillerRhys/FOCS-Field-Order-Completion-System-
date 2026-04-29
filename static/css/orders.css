@@ -113,3 +113,21 @@ body.chronos-theme {
     text-decoration: none;
     font-weight: bold;
 }
+
+.btn-logout-red {
+    background-color: #d9534f; /* A standard 'danger' red */
+    color: white;
+    border: none;
+    padding: 8px 16px; /* Adjust these to match your + New Order button exactly */
+    border-radius: 4px; /* Matches the slightly rounded corners in your UI */
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    display: inline-block;
+    line-height: normal;
+}
+
+.btn-logout-red:hover {
+    background-color: #c9302c; /* Slightly darker on hover */
+}

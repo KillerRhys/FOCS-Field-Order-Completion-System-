@@ -91,13 +91,13 @@ def validate_user(cursor, login_data):
 
 
 # function to submit work orders.
-def submit_order(connection, cursor, user_id, order_number, customer_name, address, date, arrival_time,
-                 end_time, meter_number, ert_number, read, notes):
+def submit_order(connection, cursor, order_data):
     cursor.execute(
         "INSERT INTO work_orders(user_id, order_number, customer_name, address, date, arrival_time, end_time, "
         "meter_number, ert_number, read, notes) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        (user_id, order_number, customer_name, address, date, arrival_time, end_time, meter_number,
-         ert_number, read, notes)
+        (order_data['user_id'], order_data['order_number'], order_data['customer_name'], order_data['address'],
+         order_data['date'], order_data['arrival_time'], order_data['end_time'], order_data['meter_number'],
+         order_data['ert_number'], order_data['read'], order_data['notes'])
     )
 
     connection.commit()

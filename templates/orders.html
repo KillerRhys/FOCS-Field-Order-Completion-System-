@@ -10,9 +10,12 @@
 <div class="container">
     <header class="page-header">
         <h1>{{ session.get('name') }}'s Work Orders</h1>
-        <div class="header-actions">
+        <div style="display: flex; gap: 10px; align-items: center;">
             <a href="{{ url_for('submit_order') }}" class="btn-primary">+ New Order</a>
-            <a href="{{ url_for('login') }}" class="btn-secondary">Logout</a>
+
+            <form action="{{ url_for('logout') }}" method="post" style="margin: 0;">
+                <button type="submit" class="btn-logout-red">Logout</button>
+            </form>
         </div>
     </header>
 

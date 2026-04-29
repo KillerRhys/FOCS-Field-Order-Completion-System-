@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ session.get('name', 'Tech') }}'s New Order | FOCS</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/submit_order.css') }}">
+</head>
+<body class="chronos-theme">
+
+<div class="container">
+    <header class="page-header">
+        <h1>{{ session.get('name') }}'s New Order</h1>
+        <div style="display: flex; gap: 10px; align-items: center;">
+            <a href="{{ url_for('cancel_order') }}" class="btn-secondary">↶ Cancel Order</a>
+
+            <form action="{{ url_for('logout') }}" method="post" style="margin: 0;">
+                <button type="submit" class="btn-logout-red">Logout</button>
+            </form>
+        </div>
+    </header>
+
+    <main class="new-order">
+        <form action="{{ url_for('submit_order') }}" method="POST">
+            <input type="text" name="order_number" placeholder="Order Number" required>
+            <input type="text" name="customer_name" placeholder="Customer Name" required>
+            <input type="text" name="address" placeholder="Address" required>
+            <label for="arrival">Arrival Time</label>
+            <input type="time" id="arrival" name="arrival_time" required>
+            <label for="departure">Departure Time</label>
+            <input type="time" id="departure" name="end_time" required>
+
+            <label>Meter#</label>
+            <input type="number" name="meter_number" required>
+            <label>ERT#</label>
+            <input type="number" name="ert_number" required>
+            <label>Current Read</label>
+            <input type="number" name="read" required>
+
+            <label>Tech Notes</label>
+            <textarea name="notes"></textarea>
+
+            <button type="submit" class="btn-primary">Submit Order</button>
+        </form>
+    </main>
+</div>
+
+</body>
+</html>
