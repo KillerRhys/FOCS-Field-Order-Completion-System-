@@ -9,6 +9,7 @@ def connect_db():
         os.makedirs(file_path, exist_ok=True)
 
     connection = sqlite3.connect(file_path + "FOCS.db")
+    connection.row_factory = sqlite3.Row
     connection.execute("PRAGMA foreign_keys = ON")
     cursor = connection.cursor()
     return connection, cursor
@@ -83,10 +84,10 @@ def validate_user(cursor, login_data):
 
     result = cursor.fetchone()
     if result:
-        return True, f"Welcome User!", result
+        return True, result
 
     else:
-        return False, "Invalid ID or Password!", result
+        return False, result
 
 
 # function to submit work orders.
@@ -103,9 +104,9 @@ def submit_order(connection, cursor, user_id, order_number, customer_name, addre
 
 
 # Function that fetches all orders in database.
-def fetch_orders(cursor):
-    query = "SELECT * FROM work_orders"
-    cursor.execute(query)
+def fetch_orders(cursor, user_id):
+    query = "SELECT * FROM work_orders WHERE user_id = ?"
+    cursor.execute(query, (user_id,))
 
     rows = cursor.fetchall()
     return rows

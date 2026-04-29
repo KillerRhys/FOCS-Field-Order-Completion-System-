@@ -3,13 +3,19 @@
     www.mythosworks.com
     OC:2026.03.28-1300 | Web App: 2026.04.27-2000
 """
+import os
 
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, session
+from dotenv import load_dotenv
 import db
 
 
+load_dotenv()
 app = Flask(__name__)
-app.secret_key = "0adeflakjr0983uakjlkjadf9u"
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
+setup_connection, setup_cursor = db.connect_db()
+db.create_tables(setup_connection, setup_cursor)
+db.close_connections(setup_connection)
 
 
 # Default login page for technician.
@@ -24,7 +30,10 @@ def login():
         result = db.validate_user(cursor, login_data)
 
         if result[0]:  # TODO Order's page needs fixed for this to be tested.
-            return redirect(url_for('/orders'))
+            db.close_connections(connection)
+            session['user_id'] = result[1][0]
+            session['name'] = result[1][1]
+            return redirect(url_for('display_orders'))
         else:
             flash("Invalid credentials, please try again.")
 
@@ -33,8 +42,15 @@ def login():
 
 # Default orders page shows all the techs orders for the day.
 @app.route('/orders')
-def orders_screen():
-    pass  # TODO make this tomorrow first thing so we can finalize login testing.
+def display_orders():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    connection, cursor = db.connect_db()
+    orders_data = db.fetch_orders(cursor, session['user_id'])
+    print(orders_data)
+    db.close_connections(connection)
+    return render_template('orders.html', orders=orders_data)
 
 
 # Submit order screen.

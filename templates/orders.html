@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ session.get('name', 'Tech') }}'s Orders | FOCS</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/orders.css') }}">
+</head>
+<body class="chronos-theme">
+
+<div class="container">
+    <header class="page-header">
+        <h1>{{ session.get('name') }}'s Work Orders</h1>
+        <div class="header-actions">
+            <a href="{{ url_for('submit_order') }}" class="btn-primary">+ New Order</a>
+            <a href="{{ url_for('login') }}" class="btn-secondary">Logout</a>
+        </div>
+    </header>
+
+    <main class="orders-grid">
+        {% if orders %}
+            {% for order in orders %}
+            <section class="order-card">
+                <div class="card-header">
+                    <span class="order-id">#{{ order.order_number }}</span>
+                    <span class="order-date">{{ order.date }}</span>
+                </div>
+
+                <div class="card-body">
+                    <h3 class="customer-name">{{ order.customer_name }}</h3>
+                    <p class="address">{{ order.address }}</p>
+
+                    <div class="meta-grid">
+                        <div class="meta-item">
+                            <label>Arrival</label>
+                            <span>{{ order.arrival_time }}</span>
+                        </div>
+                        <div class="meta-item">
+                            <label>Departure</label>
+                            <span>{{ order.end_time }}</span>
+                        </div>
+                        <div class="meta-item">
+                            <label>Meter</label>
+                            <span>{{ order.meter_number }}</span>
+                        </div>
+                        <div class="meta-item">
+                            <label>ERT</label>
+                            <span>{{ order.ert_number }}</span>
+                        </div>
+                    </div>
+
+                    <div class="notes-section">
+                        <label>Tech Notes:</label>
+                        <p>{{ order.notes }}</p>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <span class="read-value">Final Read: <strong>{{ order.read }}</strong></span>
+                </div>
+            </section>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state">
+                <p>No work orders found in the system.</p>
+            </div>
+        {% endif %}
+    </main>
+</div>
+
+</body>
+</html>
