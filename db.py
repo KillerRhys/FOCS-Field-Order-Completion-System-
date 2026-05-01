@@ -36,6 +36,15 @@ def create_user_table(connection, cursor):
     connection.commit()
 
 
+def last_login(connection, cursor, time_data):
+    cursor.execute(
+        "UPDATE users SET last_login = ? WHERE user_id = ?",
+        (time_data['last_login'], time_data['user_id'])
+    )
+
+    connection.commit()
+
+
 # Create work orders table / fields.
 def create_work_orders_table(connection, cursor):
     create_work_orders = '''
@@ -103,13 +112,37 @@ def submit_order(connection, cursor, order_data):
     connection.commit()
 
 
-# Function that fetches all orders in database.
-def fetch_orders(cursor, user_id):
-    query = "SELECT * FROM work_orders WHERE user_id = ?"
-    cursor.execute(query, (user_id,))
+def fetch_orders(cursor, user_id, search=None):
+    if search:
+        # 1. The Search Query
+        # We use OR so it checks every field for the match
+        query = """
+            SELECT * FROM work_orders 
+            WHERE user_id = ? 
+            AND (
+                date LIKE ? OR 
+                customer_name LIKE ? OR 
+                address LIKE ? OR 
+                meter_number LIKE ? OR 
+                ert_number LIKE ?
+            )
+            ORDER BY date DESC, arrival_time DESC
+        """
+        # We wrap the search term in % so it finds partial matches (e.g. "Main" finds "123 Main St")
+        term = f"%{search}%"
+        cursor.execute(query, (user_id, term, term, term, term, term))
 
-    rows = cursor.fetchall()
-    return rows
+    else:
+        # 2. The Standard Query
+        # Runs when the tech first opens the page or clears the search
+        query = """
+            SELECT * FROM work_orders 
+            WHERE user_id = ? 
+            ORDER BY date DESC, arrival_time DESC
+        """
+        cursor.execute(query, (user_id,))
+
+    return cursor.fetchall()
 
 
 # Multi-faceted function to search any and all fields with specified input.
@@ -132,40 +165,3 @@ def data_search(cursor, filters):
 
     cursor.execute(query, params)
     return cursor.fetchall()
-
-
-# Test function performs all checks on system.
-def test_db():
-    connection, cursor = connect_db()
-    create_tables(connection, cursor)
-    user_info = {"name": "Joe Bob", "user_id": "0813", "pin": "7777"}
-    create_user(connection, cursor, user_info)
-    submit_order(connection, cursor, "0813","000123", "Bob Ross", "612 Wharf Ave", "2026.03.25",
-                 "08:00", "08:25", "3007416", "00894751", "00517",
-                 "Repaired small leak, Performed safety checks!")
-    submit_order(connection, cursor, "0813", "000124", "Lois Griffin", "31 Spooner ST", "2026.03.25",
-                 "08:40", "09:00", "3005216", "90704781", "9184",
-                 "Restored service per customer request, All checks ok!")
-    rows = fetch_orders(cursor)
-    if not rows:
-        print("No results!")
-    else:
-        print(f"--- {len(rows)} Work Orders Completed! ---")
-        for row in rows:
-            print(row)
-    criteria = {
-        "date": "2026.03.25",
-        "customer_name": "Lois Griffin"
-    }
-    search_result = data_search(cursor, criteria)
-    if not search_result:
-        print("No results were found!")
-    else:
-        print(f"--- {len(search_result)} Work Orders Completed! ---")
-        for result in search_result:
-            print(result)
-    connection.close()
-
-
-if __name__ == "__main__":
-    test_db()

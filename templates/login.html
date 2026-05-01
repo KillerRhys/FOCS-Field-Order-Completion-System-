@@ -10,7 +10,7 @@
 <div class="login-card">
     <h1>FOCS</h1>
 
-    {% with messages = get_flashed_messages() %}
+    {% with messages = get_flashed_messages(category_filter=["auth"]) %}
       {% if messages %}
         {% for message in messages %}
           <div class="flash">{{ message }}</div>

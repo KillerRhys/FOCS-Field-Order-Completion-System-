@@ -16,6 +16,13 @@
             <form action="{{ url_for('logout') }}" method="post" style="margin: 0;">
                 <button type="submit" class="btn-logout-red">Logout</button>
             </form>
+                        <form action="{{ url_for('display_orders') }}" method="GET" class="search-form">
+                <input type="text" name="search" placeholder="Search date, name, address..." value="{{ search_query }}">
+                <button type="submit">🔍 Search</button>
+                {% if search_query %}
+                    <a href="{{ url_for('display_orders') }}">Clear</a>
+                {% endif %}
+            </form>
         </div>
     </header>
 

@@ -19,25 +19,52 @@
         </div>
     </header>
 
+        <!-- Error Message -->
+    {% with messages = get_flashed_messages(category_filter=["order_error"]) %}
+      {% if messages %}
+        {% for message in messages %}
+          <div class="alert-error" style="color: #ff4d4d; background: #2a1b1b; padding: 10px; margin-bottom: 20px; border-radius: 5px; border: 1px solid #ff4d4d;">
+              {{ message }}
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
     <main class="new-order">
         <form action="{{ url_for('submit_order') }}" method="POST">
-            <input type="text" name="order_number" placeholder="Order Number" required>
-            <input type="text" name="customer_name" placeholder="Customer Name" required>
-            <input type="text" name="address" placeholder="Address" required>
+            <!-- Use value attribute to keep data on reload -->
+            <input type="text" name="order_number" placeholder="Order Number"
+                   value="{{ form_data.order_number if form_data else '' }}" required>
+
+            <input type="text" name="customer_name" placeholder="Customer Name"
+                   value="{{ form_data.customer_name if form_data else '' }}" required>
+
+            <input type="text" name="address" placeholder="Address"
+                   value="{{ form_data.address if form_data else '' }}" required>
+
             <label for="arrival">Arrival Time</label>
-            <input type="time" id="arrival" name="arrival_time" required>
+            <input type="time" id="arrival" name="arrival_time"
+                   value="{{ form_data.arrival_time if form_data else '' }}" required>
+
             <label for="departure">Departure Time</label>
-            <input type="time" id="departure" name="end_time" required>
+            <input type="time" id="departure" name="end_time"
+                   value="{{ form_data.end_time if form_data else '' }}" required>
 
             <label>Meter#</label>
-            <input type="number" name="meter_number" required>
+            <input type="number" name="meter_number"
+                   value="{{ form_data.meter_number if form_data else '' }}" required>
+
             <label>ERT#</label>
-            <input type="number" name="ert_number" required>
+            <input type="number" name="ert_number"
+                   value="{{ form_data.ert_number if form_data else '' }}" required>
+
             <label>Current Read</label>
-            <input type="number" name="read" required>
+            <input type="number" name="read"
+                   value="{{ form_data.read if form_data else '' }}" required>
 
             <label>Tech Notes</label>
-            <textarea name="notes"></textarea>
+            <!-- Textareas don't use the 'value' attribute; they go between the tags -->
+            <textarea name="notes">{{ form_data.notes if form_data else '' }}</textarea>
 
             <button type="submit" class="btn-primary">Submit Order</button>
         </form>
