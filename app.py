@@ -3,19 +3,25 @@
     www.mythosworks.com
     OC:2026.03.28-1300 | Web App: 2026.04.27-2000
 """
-import datetime
 import os
-import sqlite3
-
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from flask import Flask, render_template, request, redirect, url_for, flash, session
 from dotenv import load_dotenv
+from pandas.io.pytables import format_doc
+
 import db
-from datetime import datetime as dt
+from datetime import datetime as dt, timezone
 
 
 load_dotenv()
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=["200 per day", "50 per hour"]
+)
 setup_connection, setup_cursor = db.connect_db()
 db.create_tables(setup_connection, setup_cursor)
 db.close_connections(setup_connection)
@@ -23,30 +29,47 @@ db.close_connections(setup_connection)
 
 # Default login page for technician.
 @app.route('/', methods=['GET', 'POST'])
+@limiter.limit("5 per minute")
 def login():
-    connection, cursor = db.connect_db()
     if request.method == 'POST':
+        # 1. Grab data first
         user_id = request.form.get('user_id')
         pin = request.form.get('pin')
-        login_data = {'user_id': user_id, 'pin': pin}
 
-        result = db.validate_user(cursor, login_data)
+        if not user_id or not pin:
+            flash("Please enter both ID and PIN.", 'auth')
+            return render_template('login.html')
 
-        if result[0]:
-            time_data = {
-                'last_login': dt.now(datetime.UTC).strftime('%Y-%m-%d %H:%M:%S'),
-                'user_id': result[1][0]
-            }
-            db.last_login(connection, cursor, time_data)
-            db.close_connections(connection)
-            session['user_id'] = result[1][0]
-            session['name'] = result[1][1]
-            return redirect(url_for('display_orders'))
-        else:
-            db.close_connections(connection)
+        connection = None
+        try:
+            connection, cursor = db.connect_db()
+
+            # 2. Validate User
+            # Suggestion: return a dictionary or a specific User object if possible
+            is_valid, user_data = db.validate_user(cursor, {'user_id': user_id, 'pin': pin})
+
+            if is_valid:
+                # 3. Secure the session
+                session.clear()
+                session['user_id'] = user_data[0]
+                session['name'] = user_data[1]
+
+                # 4. Log the time
+                # Using timezone.utc here as we discussed!
+                time_str = dt.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
+                db.last_login(connection, cursor, {'last_login': time_str, 'user_id': user_data[0]})
+
+                return redirect(url_for('display_orders'))
+
             flash("Invalid credentials, please try again.", 'auth')
 
-    db.close_connections(connection)
+        except Exception as e:
+            # Good to catch general DB errors here too
+            flash(f"Login system error: {e}", 'auth')
+        finally:
+            if connection:
+                db.close_connections(connection)
+
     return render_template('login.html')
 
 
@@ -59,16 +82,17 @@ def logout():
 # Default orders page shows all the techs orders for the day.
 @app.route('/orders')
 def display_orders():
-    user_id = session.get('user_id')
-    # This looks for ?search=... in the URL
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
     search_query = request.args.get('search', '').strip()
 
     connection, cursor = db.connect_db()
 
     if search_query:
-        orders = db.fetch_orders(cursor, user_id, search=search_query)
+        orders = db.fetch_orders(cursor, session['user_id'], search=search_query)
     else:
-        orders = db.fetch_orders(cursor, user_id)
+        orders = db.fetch_orders(cursor, session['user_id'])
 
     db.close_connections(connection)
     return render_template('orders.html', orders=orders, search_query=search_query)
@@ -80,8 +104,11 @@ def submit_order():
     if 'user_id' not in session:
         return redirect(url_for('login'))
 
-    try:
-        if request.method == 'POST':
+    order_data = {}
+
+    if request.method == 'POST':
+        connection = None  # <--- Setting this to None fixes the warning!
+        try:
             order_data = {
                 'user_id': session['user_id'],
                 'order_number': request.form.get('order_number'),
@@ -96,29 +123,32 @@ def submit_order():
                 'notes': request.form.get('notes')
             }
 
-            # Check if all values in the dictionary are present (not empty)
             if not all(order_data.values()):
                 flash("Please fill out all required fields.", "order_error")
                 return render_template('submit_order.html', form_data=order_data)
 
+            if order_data['end_time'] < order_data['arrival_time']:
+                flash("End time cannot be earlier than arrival time.", "order_error")
+                return render_template('submit_order.html', form_data=order_data)
+
             connection, cursor = db.connect_db()
             db.submit_order(connection, cursor, order_data)
-            db.close_connections(connection)
 
+            flash("Order added successfully!", "order_success")
             return redirect(url_for('display_orders'))
 
-        else:
-            return render_template('submit_order.html')
+        except db.IntegrityError as e:
+            flash(f'Database error (likely duplicate order number): {e}', 'order_error')
+            return render_template('submit_order.html', form_data=order_data)
 
-    except sqlite3.IntegrityError as e:
+        finally:
+            if connection:
+                db.close_connections(connection)
 
-        flash(f'Database error: {e}', 'order_error')
-
-        # Pass order_data back so the form fields stay filled
-
-        return render_template('submit_order.html', form_data=order_data)
+    return render_template('submit_order.html')
 
 
+# Cancels new order form and returns to display orders.
 @app.route('/cancel')
 def cancel_order():
     if 'user_id' not in session:

@@ -1,5 +1,12 @@
 import os.path
 import sqlite3
+from dotenv import load_dotenv
+from werkzeug.security import generate_password_hash, check_password_hash
+
+
+IntegrityError = sqlite3.IntegrityError
+load_dotenv()
+PEPPER = os.getenv("PEPPER")
 
 
 # Connects to SQLite3 DB creates data folder if none existent.
@@ -61,7 +68,8 @@ def create_work_orders_table(connection, cursor):
         ert_number TEXT,
         read TEXT,
         notes TEXT,
-        FOREIGN KEY(user_id) REFERENCES users(user_id)
+        FOREIGN KEY(user_id) REFERENCES users(user_id),
+        CHECK (end_time >= arrival_time)
     );
         '''
 
@@ -77,9 +85,11 @@ def create_tables(connection, cursor):
 
 # Creates new user for system.
 def create_user(connection, cursor, user_info):
+    peppered_pin = user_info['pin'] + PEPPER
+    hashed_pin = generate_password_hash(peppered_pin)
     cursor.execute(
         "INSERT INTO users(name, user_id, pin) VALUES(?, ?, ?)",
-        (user_info['name'], user_info['user_id'], user_info['pin'])
+        (user_info['name'], user_info['user_id'], hashed_pin)
     )
 
     connection.commit()
@@ -87,28 +97,33 @@ def create_user(connection, cursor, user_info):
 
 # Validates user against database.
 def validate_user(cursor, login_data):
-    query = "SELECT user_id, name, pin FROM users WHERE user_id = ? AND pin = ?"
-
-    cursor.execute(query, (login_data["user_id"], login_data['pin']))
-
+    query = "SELECT user_id, name, pin FROM users WHERE user_id = ?"
+    cursor.execute(query, (login_data["user_id"],))
     result = cursor.fetchone()
-    if result:
-        return True, result
 
-    else:
-        return False, result
+    if result:
+        if check_password_hash(result[2], login_data['pin'] + PEPPER):
+            return True, result
+
+    return False, None
 
 
 # function to submit work orders.
 def submit_order(connection, cursor, order_data):
+    # It's often safer to wrap the execute in a try/except here
+    # if you want to log specifically what happened in the DB
     cursor.execute(
-        "INSERT INTO work_orders(user_id, order_number, customer_name, address, date, arrival_time, end_time, "
-        "meter_number, ert_number, read, notes) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        (order_data['user_id'], order_data['order_number'], order_data['customer_name'], order_data['address'],
-         order_data['date'], order_data['arrival_time'], order_data['end_time'], order_data['meter_number'],
-         order_data['ert_number'], order_data['read'], order_data['notes'])
+        """INSERT INTO work_orders(
+            user_id, order_number, customer_name, address, date, 
+            arrival_time, end_time, meter_number, ert_number, read, notes
+        ) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        (
+            order_data['user_id'], order_data['order_number'], order_data['customer_name'],
+            order_data['address'], order_data['date'], order_data['arrival_time'],
+            order_data['end_time'], order_data['meter_number'], order_data['ert_number'],
+            order_data['read'], order_data['notes']
+        )
     )
-
     connection.commit()
 
 
