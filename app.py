@@ -8,8 +8,6 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask import Flask, render_template, request, redirect, url_for, flash, session
 from dotenv import load_dotenv
-from pandas.io.pytables import format_doc
-
 import db
 from datetime import datetime as dt, timezone
 
@@ -22,9 +20,9 @@ limiter = Limiter(
     app=app,
     default_limits=["200 per day", "50 per hour"]
 )
-setup_connection, setup_cursor = db.connect_db()
-db.create_tables(setup_connection, setup_cursor)
-db.close_connections(setup_connection)
+
+# Initial setup if fresh run.
+db.create_tables()
 
 
 # Default login page for technician.
@@ -40,35 +38,29 @@ def login():
             flash("Please enter both ID and PIN.", 'auth')
             return render_template('login.html')
 
-        connection = None
         try:
-            connection, cursor = db.connect_db()
-
             # 2. Validate User
             # Suggestion: return a dictionary or a specific User object if possible
-            is_valid, user_data = db.validate_user(cursor, {'user_id': user_id, 'pin': pin})
+            is_valid, user_data = db.validate_user({'user_id': user_id, 'pin': pin})
 
             if is_valid:
                 # 3. Secure the session
                 session.clear()
-                session['user_id'] = user_data[0]
-                session['name'] = user_data[1]
+                session['user_id'] = user_data['user_id']
+                session['name'] = user_data['name']
 
                 # 4. Log the time
                 # Using timezone.utc here as we discussed!
                 time_str = dt.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
-                db.last_login(connection, cursor, {'last_login': time_str, 'user_id': user_data[0]})
+                db.last_login({'last_login': time_str, 'user_id': user_data[0]})
 
                 return redirect(url_for('display_orders'))
 
             flash("Invalid credentials, please try again.", 'auth')
 
-        except Exception as e:
+        except db.DatabaseError:
             # Good to catch general DB errors here too
-            flash(f"Login system error: {e}", 'auth')
-        finally:
-            if connection:
-                db.close_connections(connection)
+            flash(f"Failed login attempt, please try again!", 'auth')
 
     return render_template('login.html')
 
@@ -87,15 +79,35 @@ def display_orders():
 
     search_query = request.args.get('search', '').strip()
 
-    connection, cursor = db.connect_db()
-
     if search_query:
-        orders = db.fetch_orders(cursor, session['user_id'], search=search_query)
+        orders = db.fetch_orders(session['user_id'], search=search_query)
     else:
-        orders = db.fetch_orders(cursor, session['user_id'])
+        orders = db.fetch_orders(session['user_id'])
 
-    db.close_connections(connection)
     return render_template('orders.html', orders=orders, search_query=search_query)
+
+
+# Order details page.
+@app.route('/details/<order_number>')
+def order_details(order_number):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    order = db.get_order_by_number(order_number, session['user_id'])
+
+    if not order:
+        flash("Order not found or access denied.", "order_error")
+
+    return render_template('details.html', order=order)
+
+
+# Add this to app.py
+@app.route('/edit/<order_num>')
+def edit_order(order_num):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    return f"Future Edit Page for Order: {order_num}"
 
 
 # Submit order screen.
@@ -132,7 +144,7 @@ def submit_order():
                 return render_template('submit_order.html', form_data=order_data)
 
             connection, cursor = db.connect_db()
-            db.submit_order(connection, cursor, order_data)
+            db.submit_order(order_data)
 
             flash("Order added successfully!", "order_success")
             return redirect(url_for('display_orders'))
@@ -140,10 +152,6 @@ def submit_order():
         except db.IntegrityError as e:
             flash(f'Database error (likely duplicate order number): {e}', 'order_error')
             return render_template('submit_order.html', form_data=order_data)
-
-        finally:
-            if connection:
-                db.close_connections(connection)
 
     return render_template('submit_order.html')
 

@@ -26,11 +26,16 @@
         </div>
     </header>
 
-    {% with messages = get_flashed_messages(category_filter=["order_success"]) %}
+    {% with messages = get_flashed_messages(with_categories=true, category_filter=["order_success", "order_error"]) %}
         {% if messages %}
-            {% for message in messages %}
-                <div class="alert-success" style="color: #155724; background-color: #d4edda; padding: 10px; margin-bottom: 20px; border-radius: 5px; border: 1px solid #c3e6cb;">
-                {{ message }}
+            {% for category, message in messages %}
+                <div class="alert" style="padding: 10px; margin-bottom: 20px; border-radius: 5px; border: 1px solid;
+                    {% if category == 'order_success' %}
+                        color: #155724; background-color: #d4edda; border-color: #c3e6cb;
+                    {% else %}
+                        color: #721c24; background-color: #f8d7da; border-color: #f5c6cb;
+                    {% endif %}">
+                    {{ message }}
                 </div>
             {% endfor %}
         {% endif %}
@@ -40,42 +45,44 @@
         {% if orders %}
             {% for order in orders %}
             <section class="order-card">
-                <div class="card-header">
-                    <span class="order-id">#{{ order.order_number }}</span>
-                    <span class="order-date">{{ order.date }}</span>
-                </div>
-
-                <div class="card-body">
-                    <h3 class="customer-name">{{ order.customer_name }}</h3>
-                    <p class="address">{{ order.address }}</p>
-
-                    <div class="meta-grid">
-                        <div class="meta-item">
-                            <label>Arrival</label>
-                            <span>{{ order.arrival_time }}</span>
-                        </div>
-                        <div class="meta-item">
-                            <label>Departure</label>
-                            <span>{{ order.end_time }}</span>
-                        </div>
-                        <div class="meta-item">
-                            <label>Meter</label>
-                            <span>{{ order.meter_number }}</span>
-                        </div>
-                        <div class="meta-item">
-                            <label>ERT</label>
-                            <span>{{ order.ert_number }}</span>
-                        </div>
+                <a href="{{ url_for('order_details', order_number=order.order_number) }}" class="card-link-wrapper" style="text-decoration: none; color: inherit;">
+                    <div class="card-header">
+                        <span class="order-id">#{{ order.order_number }}</span>
+                        <span class="order-date">{{ order.date }}</span>
                     </div>
 
-                    <div class="notes-section">
-                        <label>Tech Notes:</label>
-                        <p>{{ order.notes }}</p>
+                    <div class="card-body">
+                        <h3 class="customer-name">{{ order.customer_name }}</h3>
+                        <p class="address">{{ order.address }}</p>
+
+                        <div class="meta-grid">
+                            <div class="meta-item">
+                                <label>Arrival</label>
+                                <span>{{ order.arrival_time }}</span>
+                            </div>
+                            <div class="meta-item">
+                                <label>Departure</label>
+                                <span>{{ order.end_time }}</span>
+                            </div>
+                            <div class="meta-item">
+                                <label>Meter</label>
+                                <span>{{ order.meter_number }}</span>
+                            </div>
+                            <div class="meta-item">
+                                <label>ERT</label>
+                                <span>{{ order.ert_number }}</span>
+                            </div>
+                        </div>
+
+                        <div class="notes-section">
+                            <label>Tech Notes:</label>
+                            <p>{{ order.notes }}</p>
+                        </div>
                     </div>
-                </div>
-                <div class="card-footer">
-                    <span class="read-value">Final Read: <strong>{{ order.read }}</strong></span>
-                </div>
+                    <div class="card-footer">
+                        <span class="read-value">Final Read: <strong>{{ order.read }}</strong></span>
+                    </div>
+                </a>
             </section>
             {% endfor %}
         {% else %}

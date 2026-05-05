@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Order #{{ order.order_number }} Details | FOCS</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/details.css') }}">
+</head>
+<body class="chronos-theme">
+
+<div class="container">
+    <header class="page-header">
+        <div class="header-left" style="display: flex; gap: 10px; align-items: center;">
+            <a href="{{ url_for('display_orders') }}" class="btn-secondary">← Back</a>
+
+            <a href="{{ url_for('edit_order', order_num=order.order_number) }}" class="btn-edit">
+            ✎ Edit Order
+            </a>
+        </div>
+            <h1>Work Order #{{ order.order_number }}</h1>
+    </header>
+
+    <main class="details-container">
+        <section class="details-card main-info">
+            <div class="card-header">
+                <h2>Customer Information</h2>
+            </div>
+            <div class="card-body">
+                <h3 class="customer-name-large">{{ order.customer_name }}</h3>
+                <p class="address-large">{{ order.address }}</p>
+            </div>
+        </section>
+
+        <div class="details-grid">
+            <section class="details-card">
+                <div class="card-header"><h3>Time Tracking</h3></div>
+                <div class="card-body">
+                    <div class="data-row">
+                        <label>Arrival:</label> <span>{{ order.arrival_time }}</span>
+                    </div>
+                    <div class="data-row">
+                        <label>Departure:</label> <span>{{ order.end_time }}</span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="details-card">
+                <div class="card-header"><h3>Meter Details</h3></div>
+                <div class="card-body">
+                    <div class="data-row">
+                        <label>Meter #:</label> <span>{{ order.meter_number }}</span>
+                    </div>
+                    <div class="data-row">
+                        <label>ERT #:</label> <span>{{ order.ert_number }}</span>
+                    </div>
+                    <div class="data-row">
+                        <label>Final Read:</label> <span class="highlight-read">{{ order.read }}</span>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <section class="details-card notes-full">
+            <div class="card-header"><h3>Technician Notes</h3></div>
+            <div class="card-body">
+                <p class="full-notes">{{ order.notes if order.notes else "No notes provided." }}</p>
+            </div>
+        </section>
+
+        <footer class="details-footer">
+            <p class="meta-footer">Order handled by Tech ID: {{ order.user_id }}</p>
+        </footer>
+    </main>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,15 @@
+:root {
+    --bg-dark: #0f172a;
+    --card-bg: #1e293b;
+    --warning: #f39c12; /* Amber for editing */
+    --text-main: #f1f5f9;
+    --border: #334155;
+}
+
+body { background-color: var(--bg-dark); color: var(--text-main); font-family: sans-serif; }
+
+.edit-container { max-width: 800px; margin: 40px auto; border-top: 4px solid var(--warning); background: var(--card-bg); padding: 30px; border-radius: 0 0 10px 10px; }
+
+.btn-save { background: var(--warning); color: #000; padding: 12px 24px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
+
+.btn-cancel { background: transparent; color: var(--text-main); text-decoration: underline; margin-left: 15px; }

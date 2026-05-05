@@ -1,0 +1,27 @@
+:root {
+    --bg-dark: #0f172a;
+    --card-bg: #1e293b;
+    --accent: #38bdf8;
+    --text-main: #f1f5f9;
+    --border: #334155;
+}
+
+body { background-color: var(--bg-dark); color: var(--text-main); font-family: sans-serif; }
+
+.container { max-width: 900px; margin: 0 auto; padding: 40px 20px; }
+
+.details-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 20px;
+    padding: 25px;
+}
+
+.details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+.data-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); }
+
+.customer-name-large { font-size: 2rem; color: var(--accent); margin: 0; }
+
+.btn-secondary { background: #475569; color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; margin-right: 10px; }
