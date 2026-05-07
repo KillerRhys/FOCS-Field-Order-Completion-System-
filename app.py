@@ -25,12 +25,11 @@ limiter = Limiter(
 db.create_tables()
 
 
-# Default login page for technician.
+# Default login page for technician / user with validation.
 @app.route('/', methods=['GET', 'POST'])
 @limiter.limit("5 per minute")
 def login():
     if request.method == 'POST':
-        # 1. Grab data first
         user_id = request.form.get('user_id')
         pin = request.form.get('pin')
 
@@ -39,27 +38,21 @@ def login():
             return render_template('login.html')
 
         try:
-            # 2. Validate User
-            # Suggestion: return a dictionary or a specific User object if possible
             is_valid, user_data = db.validate_user({'user_id': user_id, 'pin': pin})
 
             if is_valid:
-                # 3. Secure the session
                 session.clear()
                 session['user_id'] = user_data['user_id']
                 session['name'] = user_data['name']
 
-                # 4. Log the time
-                # Using timezone.utc here as we discussed!
                 time_str = dt.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
-                db.last_login({'last_login': time_str, 'user_id': user_data[0]})
+                db.last_login({'last_login': time_str, 'user_id': user_data['user_id']})
 
                 return redirect(url_for('display_orders'))
 
             flash("Invalid credentials, please try again.", 'auth')
 
         except db.DatabaseError:
-            # Good to catch general DB errors here too
             flash(f"Failed login attempt, please try again!", 'auth')
 
     return render_template('login.html')
@@ -71,7 +64,7 @@ def logout():
     return redirect(url_for('login'))
 
 
-# Default orders page shows all the techs orders for the day.
+# Default orders page shows all the current tech's orders for the day.
 @app.route('/orders')
 def display_orders():
     if 'user_id' not in session:
@@ -97,17 +90,51 @@ def order_details(order_number):
 
     if not order:
         flash("Order not found or access denied.", "order_error")
+        return redirect(url_for('orders'))
 
     return render_template('details.html', order=order)
 
 
-# Add this to app.py
-@app.route('/edit/<order_num>')
+# Edit order route. TODO flesh out.
+@app.route('/edit/<order_num>', methods=['GET', 'POST'])
 def edit_order(order_num):
     if 'user_id' not in session:
         return redirect(url_for('login'))
 
-    return f"Future Edit Page for Order: {order_num}"
+    current_order = db.get_order_by_number(order_num, session['user_id'])
+
+    if request.method == 'POST':
+        try:
+            update_data = {
+                'customer_name': request.form.get('customer_name'),
+                'address': request.form.get('address'),
+                # 'date': dt.now().strftime("%Y.%m.%d"),  TODO will add update flag and field to handle this!!
+                'arrival_time': request.form.get('arrival_time'),
+                'end_time': request.form.get('end_time'),
+                'meter_number': request.form.get('meter_number'),
+                'ert_number': request.form.get('ert_number'),
+                'read': request.form.get('read'),
+                'notes': request.form.get('notes')
+            }
+
+            if not all(update_data.values()):
+                flash("Please fill out all required fields.", "order_error")
+                return render_template('submit_order.html', form_data=update_data)
+
+            if update_data['end_time'] < update_data['arrival_time']:
+                flash("End time cannot be earlier than arrival time.", "order_error")
+                return render_template('submit_order.html', form_data=update_data)
+
+            db.update_record('work_orders', current_order['id'], update_data)
+
+            flash("Order successfully updated!", "order_success")
+            return redirect(url_for('display_orders'))
+
+        except db.IntegrityError as e:
+            flash(f'Database error (likely duplicate order number): {e}', 'order_error')
+            return render_template('edits.html', form_data=update_data)
+
+    return render_template('edits.html', form_data=current_order)
 
 
 # Submit order screen.
@@ -119,7 +146,6 @@ def submit_order():
     order_data = {}
 
     if request.method == 'POST':
-        connection = None  # <--- Setting this to None fixes the warning!
         try:
             order_data = {
                 'user_id': session['user_id'],
@@ -143,7 +169,6 @@ def submit_order():
                 flash("End time cannot be earlier than arrival time.", "order_error")
                 return render_template('submit_order.html', form_data=order_data)
 
-            connection, cursor = db.connect_db()
             db.submit_order(order_data)
 
             flash("Order added successfully!", "order_success")

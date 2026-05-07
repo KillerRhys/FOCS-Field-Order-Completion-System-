@@ -35,6 +35,9 @@
                 <div class="card-header"><h3>Time Tracking</h3></div>
                 <div class="card-body">
                     <div class="data-row">
+                        <label>Date:</label> <span>{{ order.date }}</span>
+                    </div>
+                    <div class="data-row">
                         <label>Arrival:</label> <span>{{ order.arrival_time }}</span>
                     </div>
                     <div class="data-row">
@@ -67,7 +70,7 @@
         </section>
 
         <footer class="details-footer">
-            <p class="meta-footer">Order handled by Tech ID: {{ order.user_id }}</p>
+            <p class="meta-footer">Order handled by Tech: {{ session['name']}} ID: {{ order.user_id }}</p>
         </footer>
     </main>
 </div>

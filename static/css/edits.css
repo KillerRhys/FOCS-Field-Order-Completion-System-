@@ -8,8 +8,24 @@
 
 body { background-color: var(--bg-dark); color: var(--text-main); font-family: sans-serif; }
 
-.edit-container { max-width: 800px; margin: 40px auto; border-top: 4px solid var(--warning); background: var(--card-bg); padding: 30px; border-radius: 0 0 10px 10px; }
+.form-container { max-width: 800px; margin: 40px auto; background: var(--card-bg); padding: 30px; border-radius: 10px; border: 1px solid var(--border); }
 
-.btn-save { background: var(--warning); color: #000; padding: 12px 24px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
+.form-group { margin-bottom: 20px; }
 
-.btn-cancel { background: transparent; color: var(--text-main); text-decoration: underline; margin-left: 15px; }
+label { display: block; color: var(--accent); margin-bottom: 8px; font-weight: bold; }
+
+input, textarea {
+    width: 100%;
+    background: var(--bg-dark);
+    border: 1px solid var(--border);
+    color: white;
+    padding: 12px;
+    border-radius: 6px;
+}
+
+.input-locked {
+    background-color: #1a1a1a !important; /* Darker than your other boxes */
+    color: #64748b !important; /* Muted gray text */
+    cursor: not-allowed;
+    border-color: transparent;
+}

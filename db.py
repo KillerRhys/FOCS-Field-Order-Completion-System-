@@ -1,6 +1,7 @@
 import os.path
 import sqlite3
 from dotenv import load_dotenv
+from contextlib import contextmanager
 from werkzeug.security import generate_password_hash, check_password_hash
 
 
@@ -10,7 +11,8 @@ load_dotenv()
 PEPPER = os.getenv("PEPPER")
 
 
-# Connects to SQLite3 DB creates data folder if none existent.
+# Connects to SQLite3 DB with specified settings using context managers..
+@contextmanager
 def connect_db():
     file_path = "data/"
     if not os.path.exists(file_path):
@@ -19,8 +21,10 @@ def connect_db():
     connection = sqlite3.connect(file_path + "FOCS.db")
     connection.row_factory = sqlite3.Row
     connection.execute("PRAGMA foreign_keys = ON")
-
-    return connection
+    try:
+        yield connection
+    finally:
+        connection.close()
 
 
 # Create user tables.
@@ -41,6 +45,7 @@ def create_user_table():
         conn.commit()
 
 
+# Helper to log techs last login.
 def last_login(time_data):
     with connect_db() as conn:
         cursor = conn.cursor()
@@ -133,12 +138,34 @@ def submit_order(order_data):
         conn.commit()
 
 
+# Function to update work order.
+def update_record(table, record_id, data):
+    blacklist = ['id', 'order_number', 'created_at']
+
+    # 2. Filter the incoming data
+    updates = {k: v for k, v in data.items() if k not in blacklist and v is not None}
+
+    if not updates:
+        return False
+
+    columns = ", ".join([f"{k} = ?" for k in updates.keys()])
+    values = list(updates.values())
+    values.append(record_id)  # Add ID for the WHERE clause
+
+    query = f"UPDATE {table} SET {columns} WHERE id = ?"
+
+    with connect_db() as conn:
+        conn.execute(query, values)
+        conn.commit()
+
+    return True
+
+
+# Helper to find order's by tech or with params.
 def fetch_orders(user_id, search=None):
     with connect_db() as conn:
         cursor = conn.cursor()
         if search:
-            # 1. The Search Query
-            # We use OR so it checks every field for the match
             query = """
                 SELECT * FROM work_orders 
                 WHERE user_id = ? 
@@ -151,13 +178,10 @@ def fetch_orders(user_id, search=None):
                 )
                 ORDER BY date DESC, arrival_time DESC
             """
-            # We wrap the search term in % so it finds partial matches (e.g. "Main" finds "123 Main St")
             term = f"%{search}%"
             cursor.execute(query, (user_id, term, term, term, term, term))
 
         else:
-            # 2. The Standard Query
-            # Runs when the tech first opens the page or clears the search
             query = """
                 SELECT * FROM work_orders 
                 WHERE user_id = ? 
@@ -183,17 +207,12 @@ def data_search(filters):
         """
         filters: A dictionary like {"date": "2026.03.25", "customer_name": "Lois Griffin"}
         """
-        # 1. Start with the base query
         query = "SELECT * FROM work_orders"
         params = []
 
-        # 2. If there are filters, build the WHERE clause dynamically
         if filters:
-            # Create "column_name = ?" strings
             conditions = [f"{field} = ?" for field in filters.keys()]
-            # Join them with " AND "
             query += " WHERE " + " AND ".join(conditions)
-            # Collect the actual values in the same order
             params = list(filters.values())
 
         cursor.execute(query, params)
