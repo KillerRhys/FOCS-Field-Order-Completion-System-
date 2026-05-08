@@ -90,7 +90,7 @@ def order_details(order_number):
 
     if not order:
         flash("Order not found or access denied.", "order_error")
-        return redirect(url_for('orders'))
+        return redirect(url_for('display_orders'))
 
     return render_template('details.html', order=order)
 
@@ -101,29 +101,36 @@ def edit_order(order_num):
     if 'user_id' not in session:
         return redirect(url_for('login'))
 
+    update_data = None
     current_order = db.get_order_by_number(order_num, session['user_id'])
+    if not current_order:
+        return redirect(url_for('display_orders'))
 
     if request.method == 'POST':
         try:
             update_data = {
                 'customer_name': request.form.get('customer_name'),
                 'address': request.form.get('address'),
-                # 'date': dt.now().strftime("%Y.%m.%d"),  TODO will add update flag and field to handle this!!
                 'arrival_time': request.form.get('arrival_time'),
                 'end_time': request.form.get('end_time'),
                 'meter_number': request.form.get('meter_number'),
                 'ert_number': request.form.get('ert_number'),
                 'read': request.form.get('read'),
-                'notes': request.form.get('notes')
+                'notes': request.form.get('notes'),
+                'has_updated': 1,
+                'update_timestamp': dt.now().strftime("%Y.%m.%d %H:%M:%S"),
             }
 
-            if not all(update_data.values()):
+            required_fields = ['customer_name', 'address', 'arrival_time', 'end_time',
+                               'meter_number', 'ert_number', 'read', 'notes']
+
+            if not all(update_data[k] for k in required_fields):
                 flash("Please fill out all required fields.", "order_error")
-                return render_template('submit_order.html', form_data=update_data)
+                return render_template('edits.html', form_data=update_data)
 
             if update_data['end_time'] < update_data['arrival_time']:
                 flash("End time cannot be earlier than arrival time.", "order_error")
-                return render_template('submit_order.html', form_data=update_data)
+                return render_template('edits.html', form_data=update_data)
 
             db.update_record('work_orders', current_order['id'], update_data)
 
@@ -131,7 +138,7 @@ def edit_order(order_num):
             return redirect(url_for('display_orders'))
 
         except db.IntegrityError as e:
-            flash(f'Database error (likely duplicate order number): {e}', 'order_error')
+            flash(f'Database error (likely duplicate order number)', 'order_error')
             return render_template('edits.html', form_data=update_data)
 
     return render_template('edits.html', form_data=current_order)
@@ -158,10 +165,15 @@ def submit_order():
                 'meter_number': request.form.get('meter_number'),
                 'ert_number': request.form.get('ert_number'),
                 'read': request.form.get('read'),
-                'notes': request.form.get('notes')
+                'notes': request.form.get('notes'),
+                'has_updated': 0,
+                'update_timestamp': None
             }
 
-            if not all(order_data.values()):
+            required_fields = ['order_number', 'customer_name', 'address', 'arrival_time', 'end_time',
+                               'meter_number', 'ert_number', 'read', 'notes']
+
+            if not all(order_data[k] for k in required_fields):
                 flash("Please fill out all required fields.", "order_error")
                 return render_template('submit_order.html', form_data=order_data)
 

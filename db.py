@@ -75,6 +75,8 @@ def create_work_orders_table():
             ert_number TEXT,
             read TEXT,
             notes TEXT,
+            has_updated BOOLEAN DEFAULT 0,
+            update_timestamp DATETIME,
             FOREIGN KEY(user_id) REFERENCES users(user_id),
             CHECK (end_time >= arrival_time)
         );
@@ -104,6 +106,16 @@ def create_user(user_info):
         conn.commit()
 
 
+def create_default_user():
+    user_info = {
+        "name": "Joe Bob",
+        "user_id": "0813",
+        "pin": "777"
+    }
+
+    create_user(user_info)
+
+
 # Validates user against database.
 def validate_user(login_data):
     with connect_db() as conn:
@@ -126,13 +138,13 @@ def submit_order(order_data):
         cursor.execute(
             """INSERT INTO work_orders(
                 user_id, order_number, customer_name, address, date, 
-                arrival_time, end_time, meter_number, ert_number, read, notes
-            ) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                arrival_time, end_time, meter_number, ert_number, read, notes, has_updated, update_timestamp
+            ) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 order_data['user_id'], order_data['order_number'], order_data['customer_name'],
                 order_data['address'], order_data['date'], order_data['arrival_time'],
                 order_data['end_time'], order_data['meter_number'], order_data['ert_number'],
-                order_data['read'], order_data['notes']
+                order_data['read'], order_data['notes'], order_data['has_updated'], order_data['update_timestamp']
             )
         )
         conn.commit()
