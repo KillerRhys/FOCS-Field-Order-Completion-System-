@@ -9,16 +9,16 @@ IntegrityError = sqlite3.IntegrityError
 DatabaseError = sqlite3.Error
 load_dotenv()
 PEPPER = os.getenv("PEPPER")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.path.join(BASE_DIR, "data", "FOCS.db")
 
 
 # Connects to SQLite3 DB with specified settings using context managers..
 @contextmanager
 def connect_db():
-    file_path = "data/"
-    if not os.path.exists(file_path):
-        os.makedirs(file_path, exist_ok=True)
+    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
 
-    connection = sqlite3.connect(file_path + "FOCS.db")
+    connection = sqlite3.connect(DB_PATH)
     connection.row_factory = sqlite3.Row
     connection.execute("PRAGMA foreign_keys = ON")
     try:
@@ -43,6 +43,12 @@ def create_user_table():
 
         cursor.execute(create_users)
         conn.commit()
+
+
+# First run to build tables and install test user.
+def initial_setup():
+    create_tables()
+    create_default_user()
 
 
 # Helper to log techs last login.
@@ -107,13 +113,21 @@ def create_user(user_info):
 
 
 def create_default_user():
-    user_info = {
-        "name": "Joe Bob",
-        "user_id": "0813",
-        "pin": "777"
-    }
+    with connect_db as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM users")
+        count = cursor.fectchne()[0]
 
-    create_user(user_info)
+    if count == 0:
+        user_info = {
+            "name": "Joe Bob",
+            "user_id": "0813",
+            "pin": "7777"
+        }
+
+        create_user(user_info)
+    else:
+        pass
 
 
 # Validates user against database.

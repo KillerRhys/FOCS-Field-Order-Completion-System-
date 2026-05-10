@@ -22,7 +22,12 @@ limiter = Limiter(
 )
 
 # Initial setup if fresh run.
-db.create_tables()
+db_path = "data/FOCS.db"
+
+if not os.path.exists(db_path):
+    db.initial_setup()
+else:
+    db.create_tables()
 
 
 # Default login page for technician / user with validation.
@@ -104,6 +109,7 @@ def edit_order(order_num):
     update_data = None
     current_order = db.get_order_by_number(order_num, session['user_id'])
     if not current_order:
+        flash("Unable to locate order.", "order_error")
         return redirect(url_for('display_orders'))
 
     if request.method == 'POST':

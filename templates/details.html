@@ -70,7 +70,22 @@
         </section>
 
         <footer class="details-footer">
-            <p class="meta-footer">Order handled by Tech: {{ session['name']}} ID: {{ order.user_id }}</p>
+            <div class="update-status" style="margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                {% if order.has_updated == 1 %}
+                    <span style="color: #4ade80;">☑ Updated by Technician</span>
+                    {% if order.update_timestamp %}
+                        <span style="margin-left: 10px; opacity: 0.8;">
+                            (Modified on: {{ order.update_timestamp }})
+                        </span>
+                    {% endif %}
+                {% else %}
+                    <span style="opacity: 0.6;">☐ Original Entry</span>
+                {% endif %}
+            </div>
+
+            <p class="meta-footer" style="opacity: 0.6; font-size: 0.9em;">
+                Order handled by Tech: {{ session['name'] }} | ID: {{ order.user_id }}
+            </p>
         </footer>
     </main>
 </div>

@@ -82,6 +82,22 @@
                     <div class="card-footer">
                         <span class="read-value">Final Read: <strong>{{ order.read }}</strong></span>
                     </div>
+                    <div class="card-footer" style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px;">
+                        <span class="has_updated">
+                            User Updated:
+                            <strong>
+                                 {% if order.has_updated == 1 %}
+                                    <span style="color: #4ade80;">☑</span> {% else %}
+                                    <span style="opacity: 0.5;">☐</span> {% endif %}
+                            </strong>
+                        </span>
+
+                        {% if order.has_updated == 1 and order.update_timestamp %}
+                            <span class="updated_timestamp" style="font-size: 0.85em; opacity: 0.8;">
+                                Updated On: <strong>{{ order.update_timestamp }}</strong>
+                            </span>
+                        {% endif %}
+                    </div>
                 </a>
             </section>
             {% endfor %}
