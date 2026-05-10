@@ -1,8 +1,9 @@
-import os.path
+import os
 import sqlite3
 from dotenv import load_dotenv
 from contextlib import contextmanager
 from werkzeug.security import generate_password_hash, check_password_hash
+import csv
 
 
 IntegrityError = sqlite3.IntegrityError
@@ -26,6 +27,11 @@ def connect_db():
         connection.close()
 
 
+def initialize():
+    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
+    initial_setup()
+
+
 # Create user tables.
 def create_user_table():
     with connect_db() as conn:
@@ -47,7 +53,30 @@ def create_user_table():
 # First run to build tables and install test user.
 def initial_setup():
     create_tables()
+    migrate_work_orders_table()
     create_default_user()
+    seed_default_orders()
+
+
+def migrate_work_orders_table():
+    """Adds missing columns to work_orders if they don't exist."""
+    with connect_db() as conn:
+        cursor = conn.cursor()
+        # Get existing columns
+        cursor.execute("PRAGMA table_info(work_orders)")
+        columns = [column[1] for column in cursor.fetchall()]
+
+        # Add has_updated if missing
+        if 'has_updated' not in columns:
+            cursor.execute("ALTER TABLE work_orders ADD COLUMN has_updated BOOLEAN DEFAULT 0")
+            print("Migration: Added 'has_updated' to work_orders.")
+
+        # Add update_timestamp if missing
+        if 'update_timestamp' not in columns:
+            cursor.execute("ALTER TABLE work_orders ADD COLUMN update_timestamp DATETIME")
+            print("Migration: Added 'update_timestamp' to work_orders.")
+
+        conn.commit()
 
 
 # Helper to log techs last login.
@@ -88,6 +117,43 @@ def create_work_orders_table():
             '''
 
         cursor.execute(create_work_orders)
+        conn.commit()
+
+
+def seed_default_orders():
+    """Imports orders from seed_orders.csv if the work_orders table is empty."""
+    csv_path = os.path.join(BASE_DIR, "data", "seed_orders.csv")
+
+    if not os.path.exists(csv_path):
+        print(f"Seed file not found at {csv_path}. Skipping order seeding.")
+        return
+
+    with connect_db() as conn:
+        cursor = conn.cursor()
+        # Check if table is empty to avoid duplicate seeding
+        cursor.execute("SELECT COUNT(*) FROM work_orders")
+        if cursor.fetchone()[0] > 0:
+            return
+
+        with open(csv_path, mode='r', encoding='utf-8') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                # Convert 'None' strings back to actual None for the DB
+                update_ts = row['update_timestamp'] if row['update_timestamp'] else None
+
+                cursor.execute(
+                    """INSERT INTO work_orders (
+                        user_id, order_number, customer_name, address, date, 
+                        arrival_time, end_time, meter_number, ert_number, 
+                        read, notes, has_updated, update_timestamp
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    (
+                        row['user_id'], row['order_number'], row['customer_name'],
+                        row['address'], row['date'], row['arrival_time'],
+                        row['end_time'], row['meter_number'], row['ert_number'],
+                        row['read'], row.get('notes', ''), int(row['has_updated']), update_ts
+                    )
+                )
         conn.commit()
 
 
@@ -144,12 +210,22 @@ def create_default_user():
         count = cursor.fetchone()[0]
 
     if count == 0:
-        user_info = {
+        user_info_joe = {
             "name": "Joe Bob",
             "user_id": "0813",
             "pin": "7777"
         }
-        create_user(user_info)
+
+        user_info_randy = {
+            "name": "Randy Sanchez",
+            "user_id": "9999",
+            "pin": "8888"
+        }
+
+        create_user(user_info_joe)
+        create_user(user_info_randy)
+
+
 
 
 def validate_user(login_data):

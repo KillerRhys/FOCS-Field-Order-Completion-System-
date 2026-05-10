@@ -22,12 +22,7 @@ limiter = Limiter(
 )
 
 # Initial setup if fresh run.
-db_path = "data/FOCS.db"
-
-if not os.path.exists(db_path):
-    db.initial_setup()
-else:
-    db.create_tables()
+db.initialize()
 
 
 # Default login page for technician / user with validation.
@@ -143,7 +138,7 @@ def edit_order(order_num):
             flash("Order successfully updated!", "order_success")
             return redirect(url_for('display_orders'))
 
-        except db.IntegrityError as e:
+        except db.IntegrityError:
             flash(f'Database error (likely duplicate order number)', 'order_error')
             return render_template('edits.html', form_data=update_data)
 
