@@ -209,9 +209,36 @@ def cancel_order():
 
 
 # User Settings screen.
-@app.route('/user')
+@app.route('/user', methods=['GET', 'POST'])
 def settings():
-    pass  # TODO Let's user change pin or submit help tickets. NOT NEEDED JUST EXTRA CREDIT!
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    if request.method == 'POST':
+        current_pin = request.form.get('current_pin')
+        new_pin = request.form.get('new_pin')
+        verify_pin = request.form.get('verify_pin')
+
+        # Validation Step 1: Matching
+        if new_pin != verify_pin:
+            flash("New PINs do not match!", "error")
+            return render_template('settings.html')
+
+        # Validation Step 2: Complexity (Optional but recommended)
+        if len(new_pin) < 4:
+            flash("PIN must be at least 4 digits.", "error")
+            return render_template('settings.html')
+
+        # Attempt the update
+        success, message = db.update_user_pin(session['user_id'], current_pin, new_pin)
+
+        if success:
+            flash(message, "order_success")  # Using your existing CSS class
+            return redirect(url_for('display_orders'))
+        else:
+            flash(message, "order_error")
+
+    return render_template('settings.html')
 
 
 if __name__ == "__main__":

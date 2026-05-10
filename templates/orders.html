@@ -13,6 +13,8 @@
         <div style="display: flex; gap: 10px; align-items: center;">
             <a href="{{ url_for('submit_order') }}" class="btn-primary">+ New Order</a>
 
+            <a href="{{ url_for('settings') }}" class="btn-secondary">User Settings</a>
+
             <form action="{{ url_for('logout') }}" method="post" style="margin: 0;">
                 <button type="submit" class="btn-logout-red">Logout</button>
             </form>

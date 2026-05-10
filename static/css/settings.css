@@ -1,0 +1,100 @@
+:root {
+    --bg-dark: #0f172a;
+    --card-bg: #1e293b;
+    --accent: #38bdf8;
+    --text-main: #f1f5f9;
+    --border: #334155;
+}
+
+body { background-color: var(--bg-dark); color: var(--text-main); font-family: sans-serif; }
+
+.container { max-width: 900px; margin: 0 auto; padding: 40px 20px; }
+
+/* Container for the specific card to keep it centered and readable */
+.settings-container {
+    display: flex;
+    justify-content: center;
+    padding-top: 20px;
+}
+
+.settings-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 40px;
+    width: 100%;
+    max-width: 500px; /* This prevents the "bare" stretched look */
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+.card-header-icon {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.card-header-icon .icon {
+    font-size: 2.5rem;
+    display: block;
+    margin-bottom: 10px;
+}
+
+.card-header-icon p {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    margin-top: 5px;
+}
+
+/* Label styling */
+label {
+    display: block;
+    font-size: 0.85rem;
+    color: var(--accent);
+    margin-bottom: 8px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Input focus state */
+input {
+    width: 100%;
+    background: var(--bg-dark);
+    border: 1px solid var(--border);
+    color: white;
+    padding: 12px;
+    border-radius: 6px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 8px rgba(56, 189, 248, 0.2);
+}
+
+/* Layout for the New/Verify inputs */
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin-top: 10px;
+}
+
+.form-actions {
+    margin-top: 30px;
+    border-top: 1px solid var(--border);
+    padding-top: 20px;
+    display: flex;
+    justify-content: flex-end;
+}
+
+/* Using the btn-primary you already have but making it full-width inside the card if needed */
+.btn-primary {
+    cursor: pointer;
+    border: none;
+    transition: opacity 0.2s;
+}
+
+.btn-primary:hover {
+    opacity: 0.9;
+}

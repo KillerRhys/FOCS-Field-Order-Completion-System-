@@ -13,7 +13,6 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, "data", "FOCS.db")
 
 
-# Connects to SQLite3 DB with specified settings using context managers..
 @contextmanager
 def connect_db():
     os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
@@ -112,11 +111,37 @@ def create_user(user_info):
         conn.commit()
 
 
+# updates user settings.
+def update_user_pin(user_id, current_pin, new_pin):
+    login_data = {
+        'user_id': user_id,
+        'pin': current_pin
+    }
+
+    success, _ = validate_user(login_data)
+
+    if not success:
+        return False, "Current PIN is incorrect."
+
+    hashed_pin = generate_password_hash(new_pin + PEPPER)
+
+    try:
+        with connect_db() as conn:
+            cursor = conn.cursor()
+            query = "UPDATE users SET pin = ? WHERE user_id = ?"
+            cursor.execute(query, (hashed_pin, user_id))
+            conn.commit()
+            return True, "PIN updated successfully!"
+    except Exception as e:
+        print(f"Database error: {e}")
+        return False, "System error. Please try again later."
+
+
 def create_default_user():
-    with connect_db as conn:
+    with connect_db() as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT COUNT(*) FROM users")
-        count = cursor.fectchne()[0]
+        count = cursor.fetchone()[0]
 
     if count == 0:
         user_info = {
@@ -124,24 +149,34 @@ def create_default_user():
             "user_id": "0813",
             "pin": "7777"
         }
-
         create_user(user_info)
-    else:
-        pass
 
 
-# Validates user against database.
 def validate_user(login_data):
-    with connect_db() as conn:
-        cursor = conn.cursor()
-        query = "SELECT user_id, name, pin FROM users WHERE user_id = ?"
-        cursor.execute(query, (login_data["user_id"],))
-        result = cursor.fetchone()
+    try:
+        with connect_db() as conn:
+            # THIS IS THE KEY: Allows dictionary-like access
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
 
-        if result:
-            if check_password_hash(result['pin'], login_data['pin'] + PEPPER):
-                return True, result
+            # We only need the pin and the user_id for the session
+            query = "SELECT user_id, name, pin FROM users WHERE user_id = ?"
+            cursor.execute(query, (login_data["user_id"],))
+            user = cursor.fetchone()
 
+            if user:
+                # Combine the input PIN with your PEPPER for the check
+                # Assuming check_password_hash comes from werkzeug.security
+                is_valid = check_password_hash(user['pin'], login_data['pin'] + PEPPER)
+
+                if is_valid:
+                    # Return a dictionary of the user data for the session
+                    return True, dict(user)
+
+            return False, None
+
+    except Exception as e:
+        print(f"Auth Error: {e}")
         return False, None
 
 
