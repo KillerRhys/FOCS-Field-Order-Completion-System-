@@ -53,7 +53,7 @@ def login():
             flash("Invalid credentials, please try again.", 'auth')
 
         except db.DatabaseError:
-            flash(f"Failed login attempt, please try again!", 'auth')
+            flash(f"Login failed, please check credentials and try again!", 'auth')
 
     return render_template('login.html')
 
